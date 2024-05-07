@@ -45,7 +45,7 @@ let translate (globals, functions) =
     | A.Complex   -> L.pointer_type i8_t
     | A.Array (t, e)    -> let num =(match e with
                            Literal(l) -> l
-                         | _ -> raise(Failure("Can not declare array's length with non integer expr type."))
+                         | _ -> raise(Failure("Can not declare  array's length with non integer expr type."))
                         )
                         in L.array_type (ltype_of_typ t) num 
   in
