@@ -12,13 +12,11 @@ ocamldep.opt -modules CalcParse.mli > CalcParse.mli.depends # cached
 # Target: CalcParse.cmi, tags: { byte, compile, extension:mli, file:CalcParse.mli, interf, ocaml, quiet }
 ocamlc.opt -c -I /home/hjb/.opam/4.08.1/lib/llvm -o CalcParse.cmi CalcParse.mli # cached
 # Target: irgen.ml.depends, tags: { extension:ml, file:irgen.ml, ocaml, ocamldep, quiet }
-ocamldep.opt -modules irgen.ml > irgen.ml.depends # cached
+ocamldep.opt -modules irgen.ml > irgen.ml.depends
 # Target: sast.ml.depends, tags: { extension:ml, file:sast.ml, ocaml, ocamldep, quiet }
 ocamldep.opt -modules sast.ml > sast.ml.depends # cached
 # Target: sast.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:sast.cmo, file:sast.ml, implem, ocaml, quiet }
 ocamlc.opt -c -I /home/hjb/.opam/4.08.1/lib/llvm -o sast.cmo sast.ml # cached
-# Target: irgen.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:irgen.cmo, file:irgen.ml, implem, ocaml, quiet }
-ocamlc.opt -c -I /home/hjb/.opam/4.08.1/lib/llvm -o irgen.cmo irgen.ml # cached
 # Target: scanner.mll, tags: { extension:mll, file:scanner.mll, lexer, ocaml, ocamllex, quiet }
 ocamllex.opt -q scanner.mll # cached
 # Target: scanner.ml.depends, tags: { extension:ml, file:scanner.ml, ocaml, ocamldep, quiet }
@@ -29,8 +27,10 @@ ocamlc.opt -c -I /home/hjb/.opam/4.08.1/lib/llvm -o scanner.cmo scanner.ml # cac
 ocamldep.opt -modules semant.ml > semant.ml.depends # cached
 # Target: semant.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:semant.cmo, file:semant.ml, implem, ocaml, quiet }
 ocamlc.opt -c -I /home/hjb/.opam/4.08.1/lib/llvm -o semant.cmo semant.ml # cached
+# Target: irgen.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:irgen.cmo, file:irgen.ml, implem, ocaml, quiet }
+ocamlc.opt -c -I /home/hjb/.opam/4.08.1/lib/llvm -o irgen.cmo irgen.ml
 # Target: calclyst.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:calclyst.cmo, file:calclyst.ml, implem, ocaml, quiet }
-ocamlc.opt -c -I /home/hjb/.opam/4.08.1/lib/llvm -o calclyst.cmo calclyst.ml # cached
+ocamlc.opt -c -I /home/hjb/.opam/4.08.1/lib/llvm -o calclyst.cmo calclyst.ml
 # Target: ast.cmx, tags: { compile, extension:cmx, extension:ml, file:ast.cmx, file:ast.ml, implem, native, ocaml, quiet }
 ocamlopt.opt -c -I /home/hjb/.opam/4.08.1/lib/llvm -o ast.cmx ast.ml # cached
 # Target: CalcParse.ml.depends, tags: { extension:ml, file:CalcParse.ml, ocaml, ocamldep, quiet }
@@ -39,12 +39,12 @@ ocamldep.opt -modules CalcParse.ml > CalcParse.ml.depends # cached
 ocamlopt.opt -c -I /home/hjb/.opam/4.08.1/lib/llvm -o CalcParse.cmx CalcParse.ml # cached
 # Target: sast.cmx, tags: { compile, extension:cmx, extension:ml, file:sast.cmx, file:sast.ml, implem, native, ocaml, quiet }
 ocamlopt.opt -c -I /home/hjb/.opam/4.08.1/lib/llvm -o sast.cmx sast.ml # cached
-# Target: irgen.cmx, tags: { compile, extension:cmx, extension:ml, file:irgen.cmx, file:irgen.ml, implem, native, ocaml, quiet }
-ocamlopt.opt -c -I /home/hjb/.opam/4.08.1/lib/llvm -o irgen.cmx irgen.ml # cached
 # Target: scanner.cmx, tags: { compile, extension:cmx, extension:ml, file:scanner.cmx, file:scanner.ml, implem, native, ocaml, quiet }
 ocamlopt.opt -c -I /home/hjb/.opam/4.08.1/lib/llvm -o scanner.cmx scanner.ml # cached
 # Target: semant.cmx, tags: { compile, extension:cmx, extension:ml, file:semant.cmx, file:semant.ml, implem, native, ocaml, quiet }
 ocamlopt.opt -c -I /home/hjb/.opam/4.08.1/lib/llvm -o semant.cmx semant.ml # cached
+# Target: irgen.cmx, tags: { compile, extension:cmx, extension:ml, file:irgen.cmx, file:irgen.ml, implem, native, ocaml, quiet }
+ocamlopt.opt -c -I /home/hjb/.opam/4.08.1/lib/llvm -o irgen.cmx irgen.ml
 # Target: calclyst.cmx, tags: { compile, extension:cmx, extension:ml, file:calclyst.cmx, file:calclyst.ml, implem, native, ocaml, quiet }
 ocamlopt.opt -c -I /home/hjb/.opam/4.08.1/lib/llvm -o calclyst.cmx calclyst.ml # cached
 # Target: calclyst.native, tags: { dont_link_with, extension:native, file:calclyst.native, link, native, ocaml, program, quiet }

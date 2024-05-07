@@ -179,6 +179,30 @@ char *compose(char *s1, char *s2) {
 	return s3;
 }
 
+
+double power(double base, int exponent) {
+    double result = 1.0;
+    if (exponent < 0) {
+        base = 1.0 / base;
+        exponent = -exponent;
+    }
+    while (exponent > 0) {
+        if (exponent % 2 == 1) {
+            result *= base;
+        }
+        base *= base;
+        exponent /= 2;
+    }
+    return result;
+}
+
+double binomial_probability(int n, int k, double p) {
+    double q = 1 - p;
+    int comb = combination(n, k);
+    double prob = comb * power(p, k) * power(q, n - k);
+    return prob;
+}
+
 #ifdef BUILD_TEST
 int main()
 {

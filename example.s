@@ -58,46 +58,6 @@ gcd:                                    # @gcd
 	.size	gcd, .Lfunc_end0-gcd
 	.cfi_endproc
                                         # -- End function
-	.globl	fibonacci               # -- Begin function fibonacci
-	.p2align	4, 0x90
-	.type	fibonacci,@function
-fibonacci:                              # @fibonacci
-	.cfi_startproc
-# %bb.0:                                # %entry
-	movl	%edi, -8(%rsp)
-	cmpl	$1, %edi
-	jg	.LBB1_1
-# %bb.5:                                # %then
-	movl	-8(%rsp), %eax
-	retq
-.LBB1_1:                                # %if_end
-	movl	$2, -16(%rsp)
-	movl	$0, -12(%rsp)
-	movl	$1, -20(%rsp)
-	movl	$0, -4(%rsp)
-	jmp	.LBB1_2
-	.p2align	4, 0x90
-.LBB1_3:                                # %while_body
-                                        #   in Loop: Header=BB1_2 Depth=1
-	movl	-20(%rsp), %eax
-	movl	-12(%rsp), %ecx
-	addl	%eax, %ecx
-	movl	%ecx, -4(%rsp)
-	movl	%eax, -12(%rsp)
-	movl	%ecx, -20(%rsp)
-	incl	-16(%rsp)
-.LBB1_2:                                # %while
-                                        # =>This Inner Loop Header: Depth=1
-	movl	-16(%rsp), %eax
-	cmpl	-8(%rsp), %eax
-	jle	.LBB1_3
-# %bb.4:                                # %while_end
-	movl	-20(%rsp), %eax
-	retq
-.Lfunc_end1:
-	.size	fibonacci, .Lfunc_end1-fibonacci
-	.cfi_endproc
-                                        # -- End function
 	.globl	elseif                  # -- Begin function elseif
 	.p2align	4, 0x90
 	.type	elseif,@function
@@ -106,24 +66,24 @@ elseif:                                 # @elseif
 # %bb.0:                                # %entry
 	movl	%edi, -12(%rsp)
 	cmpl	$1, %edi
-	jne	.LBB2_1
+	jne	.LBB1_1
 # %bb.3:                                # %then
-	leaq	.Lfmt.21(%rip), %rax
+	leaq	.Lfmt.14(%rip), %rax
 	movq	%rax, -8(%rsp)
 	retq
-.LBB2_1:                                # %elif_check
+.LBB1_1:                                # %elif_check
 	cmpl	$2, -12(%rsp)
-	jne	.LBB2_2
+	jne	.LBB1_2
 # %bb.4:                                # %elif
-	leaq	.Lfmt.22(%rip), %rax
+	leaq	.Lfmt.15(%rip), %rax
 	movq	%rax, -8(%rsp)
 	retq
-.LBB2_2:                                # %else
-	leaq	.Lfmt.23(%rip), %rax
+.LBB1_2:                                # %else
+	leaq	.Lfmt.16(%rip), %rax
 	movq	%rax, -8(%rsp)
 	retq
-.Lfunc_end2:
-	.size	elseif, .Lfunc_end2-elseif
+.Lfunc_end1:
+	.size	elseif, .Lfunc_end1-elseif
 	.cfi_endproc
                                         # -- End function
 	.globl	main                    # -- Begin function main
@@ -132,86 +92,28 @@ elseif:                                 # @elseif
 main:                                   # @main
 	.cfi_startproc
 # %bb.0:                                # %entry
-	pushq	%r14
-	.cfi_def_cfa_offset 16
 	pushq	%rbx
-	.cfi_def_cfa_offset 24
-	subq	$72, %rsp
-	.cfi_def_cfa_offset 96
-	.cfi_offset %rbx, -24
-	.cfi_offset %r14, -16
-	leaq	.Lfmt.32(%rip), %rdi
-	movq	%rdi, 56(%rsp)
-	leaq	.Lfmt.33(%rip), %rax
-	movq	%rax, 48(%rsp)
-	leaq	.Lfmt.34(%rip), %rsi
-	movq	%rsi, 40(%rsp)
-	leaq	.Lfmt.35(%rip), %rax
-	movq	%rax, 32(%rsp)
-	callq	compose@PLT
-	movq	%rax, 16(%rsp)
-	leaq	.Lfmt.36(%rip), %rax
-	movq	%rax, 24(%rsp)
-	movl	$5, 12(%rsp)
-	movl	$3, 68(%rsp)
-	movslq	12(%rsp), %rax
-	imulq	$1431655766, %rax, %rax # imm = 0x55555556
-	movq	%rax, %rcx
-	shrq	$63, %rcx
-	shrq	$32, %rax
-	addl	%ecx, %eax
-	movl	%eax, 64(%rsp)
-	movl	$1, %edi
-	movl	$2, %esi
-	callq	permutation@PLT
-	movq	16(%rsp), %rsi
-	leaq	.Lfmt.31(%rip), %r14
-	xorl	%eax, %eax
-	movq	%r14, %rdi
-	callq	printf@PLT
-	movq	56(%rsp), %rdi
-	movq	48(%rsp), %rsi
-	leaq	.LdivString(%rip), %rdx
-	callq	computeReal@PLT
-	movq	%rax, %rcx
-	leaq	.Lfmt.29(%rip), %rbx
+	.cfi_def_cfa_offset 16
+	subq	$48, %rsp
+	.cfi_def_cfa_offset 64
+	.cfi_offset %rbx, -16
+	movl	$1, 8(%rsp)
+	movl	$3, 4(%rsp)
+	leaq	.Lfmt.18(%rip), %rbx
+	movl	$1, %esi
 	xorl	%eax, %eax
 	movq	%rbx, %rdi
-	movq	%rcx, %rsi
 	callq	printf@PLT
-	movq	40(%rsp), %rdi
-	movq	32(%rsp), %rsi
-	leaq	.LmulString.39(%rip), %rdx
-	callq	computeImaginary@PLT
-	movq	%rax, %rcx
+	movl	4(%rsp), %esi
 	xorl	%eax, %eax
 	movq	%rbx, %rdi
-	movq	%rcx, %rsi
-	callq	printf@PLT
-	movq	16(%rsp), %rdi
-	movq	24(%rsp), %rsi
-	leaq	.LdivString.44(%rip), %rdx
-	callq	computeComplex@PLT
-	movq	%rax, %rcx
-	xorl	%eax, %eax
-	movq	%r14, %rdi
-	movq	%rcx, %rsi
-	callq	printf@PLT
-	movl	$6, %edi
-	movl	$3, %esi
-	callq	permutation@PLT
-	movl	%eax, %ecx
-	leaq	.Lfmt.25(%rip), %rdi
-	xorl	%eax, %eax
-	movl	%ecx, %esi
 	callq	printf@PLT
 	xorl	%eax, %eax
-	addq	$72, %rsp
+	addq	$48, %rsp
 	popq	%rbx
-	popq	%r14
 	retq
-.Lfunc_end3:
-	.size	main, .Lfunc_end3-main
+.Lfunc_end2:
+	.size	main, .Lfunc_end2-main
 	.cfi_endproc
                                         # -- End function
 	.type	n,@object               # @n
@@ -302,32 +204,32 @@ count:
 
 	.type	.Lfmt.14,@object        # @fmt.14
 .Lfmt.14:
-	.asciz	"%d\n"
-	.size	.Lfmt.14, 4
+	.asciz	"I am If"
+	.size	.Lfmt.14, 8
 
 	.type	.Lfmt.15,@object        # @fmt.15
 .Lfmt.15:
-	.asciz	"%g\n"
-	.size	.Lfmt.15, 4
+	.asciz	"I am elif"
+	.size	.Lfmt.15, 10
 
 	.type	.Lfmt.16,@object        # @fmt.16
 .Lfmt.16:
-	.asciz	"%s\n"
-	.size	.Lfmt.16, 4
+	.asciz	"I am else"
+	.size	.Lfmt.16, 10
 
 	.type	.Lfmt.17,@object        # @fmt.17
 .Lfmt.17:
-	.asciz	"%c\n"
-	.size	.Lfmt.17, 4
+	.zero	1
+	.size	.Lfmt.17, 1
 
 	.type	.Lfmt.18,@object        # @fmt.18
 .Lfmt.18:
-	.asciz	"%s\n"
+	.asciz	"%d\n"
 	.size	.Lfmt.18, 4
 
 	.type	.Lfmt.19,@object        # @fmt.19
 .Lfmt.19:
-	.asciz	"%s\n"
+	.asciz	"%g\n"
 	.size	.Lfmt.19, 4
 
 	.type	.Lfmt.20,@object        # @fmt.20
@@ -337,143 +239,23 @@ count:
 
 	.type	.Lfmt.21,@object        # @fmt.21
 .Lfmt.21:
-	.asciz	"I am If"
-	.size	.Lfmt.21, 8
+	.asciz	"%c\n"
+	.size	.Lfmt.21, 4
 
 	.type	.Lfmt.22,@object        # @fmt.22
 .Lfmt.22:
-	.asciz	"I am elif"
-	.size	.Lfmt.22, 10
+	.asciz	"%s\n"
+	.size	.Lfmt.22, 4
 
 	.type	.Lfmt.23,@object        # @fmt.23
 .Lfmt.23:
-	.asciz	"I am else"
-	.size	.Lfmt.23, 10
+	.asciz	"%s\n"
+	.size	.Lfmt.23, 4
 
 	.type	.Lfmt.24,@object        # @fmt.24
 .Lfmt.24:
-	.zero	1
-	.size	.Lfmt.24, 1
-
-	.type	.Lfmt.25,@object        # @fmt.25
-.Lfmt.25:
-	.asciz	"%d\n"
-	.size	.Lfmt.25, 4
-
-	.type	.Lfmt.26,@object        # @fmt.26
-.Lfmt.26:
-	.asciz	"%g\n"
-	.size	.Lfmt.26, 4
-
-	.type	.Lfmt.27,@object        # @fmt.27
-.Lfmt.27:
 	.asciz	"%s\n"
-	.size	.Lfmt.27, 4
-
-	.type	.Lfmt.28,@object        # @fmt.28
-.Lfmt.28:
-	.asciz	"%c\n"
-	.size	.Lfmt.28, 4
-
-	.type	.Lfmt.29,@object        # @fmt.29
-.Lfmt.29:
-	.asciz	"%s\n"
-	.size	.Lfmt.29, 4
-
-	.type	.Lfmt.30,@object        # @fmt.30
-.Lfmt.30:
-	.asciz	"%s\n"
-	.size	.Lfmt.30, 4
-
-	.type	.Lfmt.31,@object        # @fmt.31
-.Lfmt.31:
-	.asciz	"%s\n"
-	.size	.Lfmt.31, 4
-
-	.type	.Lfmt.32,@object        # @fmt.32
-.Lfmt.32:
-	.asciz	"3.7r"
-	.size	.Lfmt.32, 5
-
-	.type	.Lfmt.33,@object        # @fmt.33
-.Lfmt.33:
-	.asciz	"2.5r"
-	.size	.Lfmt.33, 5
-
-	.type	.Lfmt.34,@object        # @fmt.34
-.Lfmt.34:
-	.asciz	"3.2i"
-	.size	.Lfmt.34, 5
-
-	.type	.Lfmt.35,@object        # @fmt.35
-.Lfmt.35:
-	.asciz	"1.42i"
-	.size	.Lfmt.35, 6
-
-	.type	.Lfmt.36,@object        # @fmt.36
-.Lfmt.36:
-	.asciz	"5.2@2.8i"
-	.size	.Lfmt.36, 9
-
-	.type	.LaddString,@object     # @addString
-.LaddString:
-	.asciz	"Add"
-	.size	.LaddString, 4
-
-	.type	.LsubString,@object     # @subString
-.LsubString:
-	.asciz	"Sub"
-	.size	.LsubString, 4
-
-	.type	.LmulString,@object     # @mulString
-.LmulString:
-	.asciz	"Mul"
-	.size	.LmulString, 4
-
-	.type	.LdivString,@object     # @divString
-.LdivString:
-	.asciz	"Div"
-	.size	.LdivString, 4
-
-	.type	.LaddString.37,@object  # @addString.37
-.LaddString.37:
-	.asciz	"Add"
-	.size	.LaddString.37, 4
-
-	.type	.LsubString.38,@object  # @subString.38
-.LsubString.38:
-	.asciz	"Sub"
-	.size	.LsubString.38, 4
-
-	.type	.LmulString.39,@object  # @mulString.39
-.LmulString.39:
-	.asciz	"Mul"
-	.size	.LmulString.39, 4
-
-	.type	.LdivString.40,@object  # @divString.40
-.LdivString.40:
-	.asciz	"Div"
-	.size	.LdivString.40, 4
-
-	.type	.LaddString.41,@object  # @addString.41
-.LaddString.41:
-	.asciz	"Add"
-	.size	.LaddString.41, 4
-
-	.type	.LsubString.42,@object  # @subString.42
-.LsubString.42:
-	.asciz	"Sub"
-	.size	.LsubString.42, 4
-
-	.type	.LmulString.43,@object  # @mulString.43
-.LmulString.43:
-	.asciz	"Mul"
-	.size	.LmulString.43, 4
-
-	.type	.LdivString.44,@object  # @divString.44
-.LdivString.44:
-	.asciz	"Div"
-	.size	.LdivString.44, 4
+	.size	.Lfmt.24, 4
 
 
 	.section	".note.GNU-stack","",@progbits

@@ -75,7 +75,17 @@ let translate (globals, functions) =
         L.function_type (L.pointer_type i8_t) 
         [| L.pointer_type i8_t; L.pointer_type i8_t; L.pointer_type i8_t |] in
   let permutation_t: L.lltype =
-        L.function_type i32_t [|i32_t; i32_t|] in 
+      L.function_type i32_t [|i32_t; i32_t|] in 
+  let combination_t: L.lltype =
+      L.function_type i32_t [|i32_t; i32_t|] in 
+  let factorial_t: L.lltype = 
+      L.function_type i32_t [|i32_t|] in
+  let fibonacci_t: L.lltype = 
+      L.function_type i32_t [|i32_t|] in
+  let power_t: L.lltype =
+      L.function_type float_t [|float_t; i32_t|] in
+  let binomial_probability_t: L.lltype =
+      L.function_type float_t [|i32_t; i32_t; float_t|] in
   let printf_func : L.llvalue =
     L.declare_function "printf" printf_t the_module in
   let sconcat_func : L.llvalue =
@@ -90,6 +100,17 @@ let translate (globals, functions) =
     L.declare_function "computeComplex" computeComplex_t the_module in
   let permutation_func: L.llvalue =
     L.declare_function "permutation" permutation_t the_module in
+  let combination_func: L.llvalue =
+    L.declare_function "combination" combination_t the_module in
+  let factorial_func: L.llvalue = 
+    L.declare_function "factorial" factorial_t the_module in
+  let fibonacci_func: L.llvalue = 
+    L.declare_function "fibonacci" fibonacci_t the_module in
+  let power_func: L.llvalue =
+    L.declare_function "power"  power_t the_module in
+  let binomial_probability_func: L.llvalue =
+    L.declare_function "binomial_probability"  binomial_probability_t the_module in
+  
 
   (* Define each function (arguments and return type) so we can
      call it even before we've created its body *)
@@ -156,8 +177,20 @@ let translate (globals, functions) =
       | SChrLit c -> L.const_int i8_t (Char.code c)
       | SStrLit s -> L.build_global_stringptr s "fmt" builder
 
-      | SAssign (s, e) -> let e' = build_expr builder e in
-        ignore(L.build_store e' (lookup s) builder); e'
+      |SAssign (s, e1, e2) -> (match e2 with 
+                               (_, SNoexpr) -> (let e' = build_expr builder e1 in 
+                                        ignore(L.build_store e' (lookup s) builder); e')
+                               | _ -> let e' = build_expr builder e2 in 
+                                      let index = (match e1 with
+                                         (Int, _)          -> build_expr builder e1
+                                       | _                 -> raise(Failure("Semant.ml should have caught."))
+                                      ) in
+                                      let indices = 
+                                        (Array.of_list [L.const_int i32_t 0; index]) in 
+                                      let ptr =  
+                                        L.build_in_bounds_gep (lookup s) indices (s^"_ptr_") builder
+                                      in L.build_store e' ptr builder
+                               )
       | SBinop ((A.Float,_ ) as e1, op, e2) ->
           let e1' = build_expr builder e1
         and e2' = build_expr builder e2  in
@@ -284,6 +317,40 @@ let translate (globals, functions) =
           and e2' = build_expr builder e2 in
           L.build_call permutation_func [|e1'; e2'|] "permutation" builder
         |_->  raise (Failure("Unhandled case: permutation")))
+      | SCall ("combination", e) ->
+        (match e with
+        [e1;e2] ->
+          let e1' = build_expr builder e1
+          and e2' = build_expr builder e2 in
+          L.build_call combination_func [|e1'; e2'|] "combination" builder
+        |_->  raise (Failure("Unhandled case: combination")))
+      | SCall ("factorial", e) ->
+        (match e with
+        [e1] ->
+          let e1' = build_expr builder e1 in
+          L.build_call factorial_func [|e1'|] "factorial" builder
+        |_->  raise (Failure("Unhandled case: factorial")))
+      | SCall ("fibonacci", e) ->
+        (match e with
+        [e1] ->
+          let e1' = build_expr builder e1 in
+          L.build_call fibonacci_func [|e1'|] "fibonacci" builder
+        |_->  raise (Failure("Unhandled case: fibonacci")))
+      | SCall ("power", e) ->
+        (match e with
+        [e1;e2] ->
+          let e1' = build_expr builder e1
+          and e2' = build_expr builder e2 in
+          L.build_call power_func [|e1'; e2'|] "power" builder
+        |_->  raise (Failure("Unhandled case: power")))
+      |SCall ("binomial_probability", e) ->
+        (match e with
+        [e1;e2;e3] ->
+          let e1' = build_expr builder e1
+          and e2' = build_expr builder e2
+          and e3' = build_expr builder e3 in
+          L.build_call binomial_probability_func [|e1'; e2'; e3'|] "binomial_probability" builder
+        |_->  raise (Failure("Unhandled case: binomial_probability")))
       | SCall (f, args) ->
         let (fdef, fdecl) = StringMap.find f function_decls in
         let llargs = List.rev (List.map (build_expr builder) (List.rev args)) in

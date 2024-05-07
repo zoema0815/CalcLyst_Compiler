@@ -1,6 +1,3 @@
-Ocaml Version: 4.08.1
-LLVM version: 10.0.1
-
 ### Build the MicroC compiler
 
 ```

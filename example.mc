@@ -13,27 +13,6 @@ int gcd(int a, int b) {
   return a;
 }
 
-int fibonacci(int n) {
-    int g;
-    int h;
-    int i;
-    int count;
-    if (n <= 1) return n;
-    else {}
-
-    count = 2;
-    g = 0;
-    h = 1;
-    i = 0;
-    while (count <= n) {
-      i = g + h; 
-      g = h;     
-      h = i; 
-      count = count + 1;  
-    }
-    return h;
-}
-
 String elseif(int n) {
   String result;
   if (n == 1) {
@@ -55,24 +34,13 @@ int main() {
   int b;
   Real c;
   Real f;
-  Imaginary d;
-  Imaginary g;
-  Complex z;
-  Complex w;
-  c = 3.7r;
-  f = 2.5r;
-  d = 3.2i;
-  g = 1.42i;
-  z = d~c;
-  w = 5.2@2.8i;
-  x = 5;
-  y = 3;
-  b = x / y;
-  permutation(1,2);
-  printComplex(z);
-  printReal(c/f);
-  printReal(d*g);
-  printComplex(z/w);
-  printInt(permutation(6, 3));
+  bool flag;
+  int[2] list;
+  list[0] = 1;
+  b = 3;
+  printInt(list[0]);
+  printInt(b);
+
+
   return 0;
 }

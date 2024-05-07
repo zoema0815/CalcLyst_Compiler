@@ -42,7 +42,12 @@ let check (globals, functions) =
                                                  ("printReal", Void, [Real, "x"]);
                                                  ("printImaginary", Void, [Imaginary, "x"]);
                                                  ("printComplex", Void, [Complex, "x"]);
-                                                 ("permutation", Int, [(Int, "x"); (Int, "y")])
+                                                 ("permutation", Int, [(Int, "x"); (Int, "y")]);
+                                                 ("combination", Int, [(Int, "x"); (Int, "y")]);
+                                                 ("factorial", Int, [Int, "x"]);
+                                                 ("fibonacci", Int, [Int, "x"]);
+                                                 ("power", Float, [(Float, "x"); (Int, "y")]);
+                                                 ("binomial_probability", Float, [(Int, "x"); (Int, "y"); (Float, "z")]);
                                                ]
   in
 
@@ -103,13 +108,26 @@ let check (globals, functions) =
       | ChrLit c -> (Char, SChrLit c)
       | StrLit s -> (String, SStrLit s)
       | Id var -> (type_of_identifier var, SId var)
-      | Assign(var, e) as ex ->
-        let lt = type_of_identifier var
-        and (rt, e') = check_expr e in
-        let err = "illegal assignment " ^ string_of_typ lt ^ " = " ^
-                  string_of_typ rt ^ " in " ^ string_of_expr ex
-        in
-        (check_assign lt rt err, SAssign(var, (rt, e')))
+      | Assign(var, e1, e2) as ex -> 
+          let (rvalue, lt) = match e2 with 
+              Noexpr -> (e1, type_of_identifier var)
+            | _      -> let elem_typ = type_of_identifier var in 
+                        ( match elem_typ  with 
+                            Array(t, e) -> (match (e1, e) with
+                                           (Literal index, Literal arr_size) -> 
+                                                           if index > (arr_size - 1) 
+                                                           then raise(Failure("ERROR: Index out of bounds.")) 
+                                                           else (e2, t)
+                                            | (Unop _, _)  -> raise(Failure("ERROR: Index out of bounds.")) 
+                                            | _            -> (e2, t)  
+                                           )
+                           | _ -> raise(Failure("ERROR: This case should not have been reached.")) 
+                        )
+          in
+            let (rt, _) = check_expr rvalue in
+            let err = "illegal assignment " ^ string_of_typ lt ^ " = " ^ 
+              string_of_typ rt ^ " in " ^ string_of_expr ex
+            in  (check_assign lt rt err, SAssign(var, check_expr e1 , check_expr e2 ))
 
       | Binop(e1, op, e2) as e ->
         let (t1, e1') = check_expr e1

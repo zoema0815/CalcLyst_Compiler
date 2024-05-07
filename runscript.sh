@@ -1,4 +1,4 @@
-cd /home/hjb/calclyst
+
 
 ocamlbuild -no-hygiene -pkgs llvm calclyst.native
 

@@ -127,7 +127,8 @@ expr:
   | expr COMP     expr { Binop($1, Comp,    $3)          }
   | MINUS expr %prec NOT { Unop(Neg, $2)                 }
   | NOT expr         { Unop(Not, $2)                     }
-  | ID ASSIGN expr   { Assign($1, $3)            }
+  | ID ASSIGN expr   { Assign($1, $3, Noexpr)            }
+  | ID LBRAC expr RBRAC ASSIGN expr { Assign($1, $3, $6) }
   | ID LBRAC expr RBRAC { Access($1, $3)                 }
   | LPAREN expr RPAREN { $2                              }
   | ID LPAREN args_opt RPAREN { Call ($1, $3)  }
