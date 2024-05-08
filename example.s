@@ -16,16 +16,12 @@ gcd:                                    # @gcd
 	leaq	.Lfmt(%rip), %rbx
 	jmp	.LBB0_1
 	.p2align	4, 0x90
-.LBB0_4:                                # %else
-                                        #   in Loop: Header=BB0_1 Depth=1
-	movl	8(%rsp), %eax
-	subl	%eax, 12(%rsp)
 .LBB0_5:                                # %if_end
                                         #   in Loop: Header=BB0_1 Depth=1
 	movl	8(%rsp), %esi
 	incl	%esi
-	movq	%rbx, %rdi
 	xorl	%eax, %eax
+	movq	%rbx, %rdi
 	callq	printf@PLT
 .LBB0_1:                                # %while
                                         # =>This Inner Loop Header: Depth=1
@@ -36,8 +32,8 @@ gcd:                                    # @gcd
                                         #   in Loop: Header=BB0_1 Depth=1
 	movl	8(%rsp), %esi
 	addl	$3, %esi
-	movq	%rbx, %rdi
 	xorl	%eax, %eax
+	movq	%rbx, %rdi
 	callq	printf@PLT
 	movl	12(%rsp), %eax
 	cmpl	8(%rsp), %eax
@@ -47,12 +43,16 @@ gcd:                                    # @gcd
 	movl	12(%rsp), %eax
 	subl	%eax, 8(%rsp)
 	jmp	.LBB0_5
+	.p2align	4, 0x90
+.LBB0_4:                                # %else
+                                        #   in Loop: Header=BB0_1 Depth=1
+	movl	8(%rsp), %eax
+	subl	%eax, 12(%rsp)
+	jmp	.LBB0_5
 .LBB0_6:                                # %while_end
 	movl	8(%rsp), %eax
 	addq	$16, %rsp
-	.cfi_def_cfa_offset 16
 	popq	%rbx
-	.cfi_def_cfa_offset 8
 	retq
 .Lfunc_end0:
 	.size	gcd, .Lfunc_end0-gcd
@@ -116,162 +116,165 @@ main:                                   # @main
 	leaq	.Lfmt.27(%rip), %rsi
 	movq	%rsi, 24(%rsp)
 	leaq	.Lfmt.20(%rip), %rbx
-	movq	%rbx, %rdi
 	xorl	%eax, %eax
+	movq	%rbx, %rdi
 	callq	printf@PLT
 	leaq	.Lfmt.28(%rip), %rsi
-	movq	%rbx, %rdi
 	xorl	%eax, %eax
+	movq	%rbx, %rdi
 	callq	printf@PLT
 	movq	24(%rsp), %rsi
-	movq	%rbx, %rdi
 	xorl	%eax, %eax
+	movq	%rbx, %rdi
 	callq	printf@PLT
 	leaq	.Lfmt.29(%rip), %rsi
-	movq	%rbx, %rdi
 	xorl	%eax, %eax
+	movq	%rbx, %rdi
 	callq	printf@PLT
 	leaq	.Lfmt.30(%rip), %rsi
-	movq	%rbx, %rdi
 	xorl	%eax, %eax
+	movq	%rbx, %rdi
 	callq	printf@PLT
 	movl	44(%rsp), %esi
 	leaq	.Lfmt.18(%rip), %r14
-	movq	%r14, %rdi
 	xorl	%eax, %eax
+	movq	%r14, %rdi
 	callq	printf@PLT
 	leaq	.Lfmt.31(%rip), %rsi
-	movq	%rbx, %rdi
 	xorl	%eax, %eax
+	movq	%rbx, %rdi
 	callq	printf@PLT
 	movl	48(%rsp), %esi
-	movq	%r14, %rdi
 	xorl	%eax, %eax
+	movq	%r14, %rdi
 	callq	printf@PLT
 	movq	24(%rsp), %rsi
-	movq	%rbx, %rdi
 	xorl	%eax, %eax
+	movq	%rbx, %rdi
 	callq	printf@PLT
 	leaq	.Lfmt.32(%rip), %rsi
-	movq	%rbx, %rdi
 	xorl	%eax, %eax
+	movq	%rbx, %rdi
 	callq	printf@PLT
 	movq	24(%rsp), %rsi
-	movq	%rbx, %rdi
 	xorl	%eax, %eax
+	movq	%rbx, %rdi
 	callq	printf@PLT
 	leaq	.Lfmt.33(%rip), %rsi
-	movq	%rbx, %rdi
 	xorl	%eax, %eax
+	movq	%rbx, %rdi
 	callq	printf@PLT
 	movl	4(%rsp), %edi
 	movl	20(%rsp), %esi
 	callq	permutation@PLT
-	movq	%r14, %rdi
-	movl	%eax, %esi
+	movl	%eax, %ecx
 	xorl	%eax, %eax
+	movq	%r14, %rdi
+	movl	%ecx, %esi
 	callq	printf@PLT
 	leaq	.Lfmt.34(%rip), %rsi
-	movq	%rbx, %rdi
 	xorl	%eax, %eax
+	movq	%rbx, %rdi
 	callq	printf@PLT
 	movl	4(%rsp), %edi
 	movl	20(%rsp), %esi
 	callq	combination@PLT
-	movq	%r14, %rdi
-	movl	%eax, %esi
+	movl	%eax, %ecx
 	xorl	%eax, %eax
+	movq	%r14, %rdi
+	movl	%ecx, %esi
 	callq	printf@PLT
 	leaq	.Lfmt.35(%rip), %rsi
-	movq	%rbx, %rdi
 	xorl	%eax, %eax
+	movq	%rbx, %rdi
 	callq	printf@PLT
 	movsd	32(%rsp), %xmm0         # xmm0 = mem[0],zero
 	movl	4(%rsp), %edi
 	callq	power@PLT
 	leaq	.Lfmt.19(%rip), %r14
-	movq	%r14, %rdi
 	movb	$1, %al
+	movq	%r14, %rdi
 	callq	printf@PLT
 	leaq	.Lfmt.36(%rip), %rsi
-	movq	%rbx, %rdi
 	xorl	%eax, %eax
+	movq	%rbx, %rdi
 	callq	printf@PLT
 	movl	4(%rsp), %edi
 	movsd	32(%rsp), %xmm0         # xmm0 = mem[0],zero
 	movl	%edi, %esi
 	callq	binomial_probability@PLT
-	movq	%r14, %rdi
 	movb	$1, %al
+	movq	%r14, %rdi
 	callq	printf@PLT
 	leaq	.Lfmt.37(%rip), %rsi
-	movq	%rbx, %rdi
 	xorl	%eax, %eax
+	movq	%rbx, %rdi
 	callq	printf@PLT
 	leaq	.Lfmt.38(%rip), %rsi
-	movq	%rbx, %rdi
 	xorl	%eax, %eax
+	movq	%rbx, %rdi
 	callq	printf@PLT
 	movq	8(%rsp), %rsi
 	leaq	.Lfmt.24(%rip), %r14
-	movq	%r14, %rdi
 	xorl	%eax, %eax
+	movq	%r14, %rdi
 	callq	printf@PLT
 	leaq	.Lfmt.39(%rip), %rsi
-	movq	%rbx, %rdi
 	xorl	%eax, %eax
+	movq	%rbx, %rdi
 	callq	printf@PLT
 	movq	8(%rsp), %rdi
 	leaq	.LaddString(%rip), %rdx
 	movq	%rdi, %rsi
 	callq	computeComplex@PLT
-	movq	%r14, %rdi
-	movq	%rax, %rsi
+	movq	%rax, %rcx
 	xorl	%eax, %eax
+	movq	%r14, %rdi
+	movq	%rcx, %rsi
 	callq	printf@PLT
 	leaq	.Lfmt.40(%rip), %rsi
-	movq	%rbx, %rdi
 	xorl	%eax, %eax
+	movq	%rbx, %rdi
 	callq	printf@PLT
 	movq	8(%rsp), %rdi
 	leaq	.LsubString.42(%rip), %rdx
 	movq	%rdi, %rsi
 	callq	computeComplex@PLT
-	movq	%r14, %rdi
-	movq	%rax, %rsi
+	movq	%rax, %rcx
 	xorl	%eax, %eax
+	movq	%r14, %rdi
+	movq	%rcx, %rsi
 	callq	printf@PLT
 	leaq	.Lfmt.45(%rip), %rsi
-	movq	%rbx, %rdi
 	xorl	%eax, %eax
+	movq	%rbx, %rdi
 	callq	printf@PLT
 	movq	8(%rsp), %rdi
 	leaq	.LmulString.48(%rip), %rdx
 	movq	%rdi, %rsi
 	callq	computeComplex@PLT
-	movq	%r14, %rdi
-	movq	%rax, %rsi
+	movq	%rax, %rcx
 	xorl	%eax, %eax
+	movq	%r14, %rdi
+	movq	%rcx, %rsi
 	callq	printf@PLT
 	leaq	.Lfmt.50(%rip), %rsi
-	movq	%rbx, %rdi
 	xorl	%eax, %eax
+	movq	%rbx, %rdi
 	callq	printf@PLT
 	movq	8(%rsp), %rdi
 	leaq	.LdivString.54(%rip), %rdx
 	movq	%rdi, %rsi
 	callq	computeComplex@PLT
-	movq	%r14, %rdi
-	movq	%rax, %rsi
+	movq	%rax, %rcx
 	xorl	%eax, %eax
+	movq	%r14, %rdi
+	movq	%rcx, %rsi
 	callq	printf@PLT
 	xorl	%eax, %eax
 	addq	$88, %rsp
-	.cfi_def_cfa_offset 24
 	popq	%rbx
-	.cfi_def_cfa_offset 16
 	popq	%r14
-	.cfi_def_cfa_offset 8
 	retq
 .Lfunc_end2:
 	.size	main, .Lfunc_end2-main
@@ -587,5 +590,6 @@ count:
 .LdivString.54:
 	.asciz	"Div"
 	.size	.LdivString.54, 4
+
 
 	.section	".note.GNU-stack","",@progbits

@@ -4,9 +4,10 @@
 ocamlbuild -no-hygiene -pkgs llvm calclyst.native
 ```
 
-### Run the MicroC compiler and generate llvm code
+### Run the Calclyst compiler and generate llvm code
 ```
 llc -relocation-model=pic example.ll > example.s
+gcc -c stdlib.c -o stdlib.o
 cc -o example.exe example.s stdlib.o
 ./example.exe > example.out
 ```
