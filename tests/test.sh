@@ -110,6 +110,20 @@ run_test "10_test_array.cl" "10_test_array.out" "normal"
 echo -e " Test 20: testing illegal complex assignment"
 run_test "10_test_array_fail.cl" "10_test_array_fail.out" "error"
 
+# Section 10: Test Array
+echo -e "${YELLOW}SECTION 11: Testing Loop${NC}"
+echo -e " Test 21: testing correct loop usage"
+run_test "11_test_loop.cl" "11_test_loop.out" "normal"
+echo -e " Test 22: testing illegal loop condition"
+run_test "11_test_loop_fail.cl" "11_test_loop_fail.out" "error"
+
+# Section 11: Test Function
+echo -e "${YELLOW}SECTION 12: Testing Function${NC}"
+echo -e " Test 22: testing correct function usage"
+run_test "12_test_func.cl" "12_test_func.out" "normal"
+echo -e " Test 23: testing illegal function declaration"
+run_test "12_test_func_fail.cl" "12_test_func_fail.out" "error"
+
 # Display test results
 passing_rate=$((passed_tests * 100 / total_tests))
 echo -e "${YELLOW}Testing report:${NC}"

@@ -1,13 +1,13 @@
 int main () {
-    Real a;
+    Imaginary a;
     Imaginary b;
-    Imaginary c;
-    Complex x;
-    a = 3.7r;
-    b = 3.2i;
-    c = 1.2i + 3.2i;
-    printReal(a);
+    a = 3.2i;
+    b = 1.3i;
+    printImaginary(a);
     printImaginary(b);
-    printImaginary(c);
+    printImaginary(a + b);
+    printImaginary(a - b);
+    printReal(a * b);
+    printReal(a / b);
     return 0;
 }

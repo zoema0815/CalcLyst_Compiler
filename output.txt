@@ -1,0 +1,1022 @@
+(* Abstract Syntax Tree and functions for printing it *)
+
+type bop = Add | Sub | Mul | Div | Rdiv | Mod | Equal | Neq | Less | And | Or | Comp |
+          Greater | Leq | Geq
+
+type uop = Neg | Not
+
+
+type expr =
+    Literal of int
+  | FLit of string
+  | BoolLit of bool
+  | RLit of string
+  | ILit of string 
+  | CLit of string
+  | ChrLit of char
+  | StrLit of string
+  | Id of string
+  | Binop of expr * bop * expr
+  | Unop of uop * expr
+  | Assign of string * expr * expr
+  | Access of string * expr
+  (* function call *)
+  | Call of string * expr list
+  | Noexpr
+
+type typ = Void | Int | String | Float | Bool | Char | Real | Imaginary | Complex |  Array of typ * expr
+
+type stmt =
+    Block of stmt list
+  | Expr of expr
+  | If of expr * stmt * stmt
+  | Elif of expr * stmt * expr * stmt * stmt
+  | While of expr * stmt
+  (* return *)
+  | Return of expr
+
+(* int x: name binding *)
+type bind = typ * string
+
+(* func_def: ret_typ fname formals locals body *)
+type func_def = {
+  rtyp: typ;
+  fname: string;
+  formals: bind list;
+  locals: bind list;
+  body: stmt list;
+}
+
+type program = bind list * func_def list
+
+(* Pretty-printing functions *)
+let string_of_op = function
+    Add -> "+"
+  | Sub -> "-"
+  | Mul -> "*"
+  | Div -> "/"
+  | Rdiv -> "//"
+  | Equal -> "=="
+  | Less -> "<"
+  | Greater -> ">"
+  | Comp -> "~"
+  | Leq -> "<="
+  | Geq -> ">="
+  | And -> "&&"
+  | Or -> "||"
+  | Mod -> "%"
+  | Neq -> "!="
+
+let string_of_uop = function
+    Neg -> "-"
+  | Not -> "!"
+
+let rec string_of_expr = function
+    Literal(l) -> string_of_int l
+  | FLit(l) -> l
+  | RLit(l) -> l
+  | ILit(l) -> l
+  | CLit(l) -> l
+  | BoolLit(true) -> "true"
+  | BoolLit(false) -> "false"
+  | StrLit(str) -> str
+  | ChrLit(c) -> Char.escaped c
+  | Id(s) -> s
+  | Binop(e1, o, e2) ->
+    string_of_expr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_expr e2
+  | Unop(o, e) -> string_of_uop o ^ string_of_expr e
+  | Assign(v, e1, e2) -> 
+      (match e2 with 
+         Noexpr -> v ^ " = " ^ string_of_expr e1
+       | _ -> v ^ "[" ^ string_of_expr e1 ^ "]" ^ " = " ^ string_of_expr e2 
+      )
+  | Access(id, e) -> id ^ "[" ^ string_of_expr e ^ "]"
+  | Call(f, el) ->
+      f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
+   | Noexpr -> ""
+
+let rec string_of_stmt = function
+    Block(stmts) ->
+      "{\n" ^ String.concat "" (List.map string_of_stmt stmts) ^ "}\n"
+  | Expr(expr) -> string_of_expr expr ^ ";\n";
+  | If(e, s, Block([])) -> "if (" ^ string_of_expr e ^ ")\n" ^ string_of_stmt s
+  | If(e, s1, s2) ->  "if (" ^ string_of_expr e ^ ")\n" ^
+      string_of_stmt s1 ^ "else\n" ^ string_of_stmt s2
+  | While(e, s) -> "while (" ^ string_of_expr e ^ ") " ^ string_of_stmt s
+  | Return(expr) -> "return " ^ string_of_expr expr ^ ";\n" 
+  | Elif(e1, s1, e2, s2, s3) -> "if (" ^ string_of_expr e1 ^ ")\n" ^
+      string_of_stmt s1 ^ "elif (" ^ string_of_expr e2 ^ ")\n" ^
+      string_of_stmt s2 ^ "else\n" ^ string_of_stmt s3
+
+let rec string_of_typ = function
+    Void        -> "void"
+  | Int         -> "int"
+  | Float       -> "float"
+  | String      -> "String"
+  | Bool        -> "bool"
+  | Char        -> "char"
+  | Real        -> "Real"
+  | Imaginary   -> "Imaginary"
+  | Complex     -> "Complex"
+  | Array(t, e) -> string_of_typ t ^ "[" ^ string_of_expr e ^ "]"
+
+let string_of_vdecl (t, id) = string_of_typ t ^ " " ^ id ^ ";\n"
+
+let string_of_fdecl fdecl =
+  string_of_typ fdecl.rtyp ^ " " ^
+  fdecl.fname ^ "(" ^ String.concat ", " (List.map snd fdecl.formals) ^
+  ")\n{\n" ^
+  String.concat "" (List.map string_of_vdecl fdecl.locals) ^
+  String.concat "" (List.map string_of_stmt fdecl.body) ^
+  "}\n"
+
+let string_of_program (vars, funcs) =
+  "\n\nParsed program: \n\n" ^
+  String.concat "" (List.map string_of_vdecl vars) ^ "\n" ^
+  String.concat "\n" (List.map string_of_fdecl funcs)
+(* Semantically-checked Abstract Syntax Tree and functions for printing it *)
+
+open Ast
+
+type sexpr = typ * sx
+and sx =
+    SLiteral of int
+  | SFLit of string
+  | SRLit of string
+  | SILit of string 
+  | SCLit of string
+  | SBoolLit of bool
+  | SChrLit of char
+  | SStrLit of string
+  | SId of string
+  | SBinop of sexpr * bop * sexpr
+  | SUnop of uop * sexpr
+  | SCall of string * sexpr list
+  | SAssign of string * sexpr * sexpr
+  | SAccess of string * sexpr
+  | SNoexpr
+
+type sstmt =
+    SBlock of sstmt list
+  | SExpr of sexpr
+  | SIf of sexpr * sstmt * sstmt
+  | SElif of sexpr * sstmt * sexpr * sstmt * sstmt
+  | SWhile of sexpr * sstmt
+  | SReturn of sexpr
+
+(* func_def: ret_typ fname formals locals body *)
+type sfunc_def = {
+  srtyp: typ;
+  sfname: string;
+  sformals: bind list;
+  slocals: bind list;
+  sbody: sstmt list;
+}
+
+type sprogram = bind list * sfunc_def list
+
+
+
+(* Pretty-printing functions *)
+let rec string_of_sexpr (t, e) =
+  "(" ^ string_of_typ t ^ " : " ^ (match e with
+        SLiteral(l) -> string_of_int l
+      | SFLit(l) -> l
+      | SRLit(l) -> l 
+      | SILit(l) -> l
+      | SCLit(l) -> l
+      | SBoolLit(true) -> "true"
+      | SBoolLit(false) -> "false"
+      | SStrLit(str) -> str
+      | SChrLit(c) -> Char.escaped c
+      | SId(s) -> s
+      | SBinop(e1, o, e2) ->
+        string_of_sexpr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_sexpr e2
+      | SUnop(o, e) -> string_of_uop o ^ string_of_sexpr e
+      | SAssign(v, e1, e2)-> 
+        (match e2 with 
+            (Void, SNoexpr) -> v ^ " = " ^ string_of_sexpr e1
+          | _ -> v ^ "[" ^ string_of_sexpr e1 ^ "]" ^ " = " ^ string_of_sexpr e2 
+        )
+      | SNoexpr -> ""
+      | SAccess(id, e) -> id ^ "[" ^ string_of_sexpr e ^ "]"
+      | SCall(f, el) ->
+          f ^ "(" ^ String.concat ", " (List.map string_of_sexpr el) ^ ")"
+    ) ^ ")"
+
+let rec string_of_sstmt = function
+    SBlock(stmts) ->
+      "{\n" ^ String.concat "" (List.map string_of_sstmt stmts) ^ "}\n"
+  | SExpr(expr) -> string_of_sexpr expr ^ ";\n";
+  | SIf(e, s, SBlock([])) -> "if (" ^ string_of_sexpr e ^ ")\n" ^ string_of_sstmt s
+  | SIf(e, s1, s2) ->  "if (" ^ string_of_sexpr e ^ ")\n" ^
+    string_of_sstmt s1 ^ "else\n" ^ string_of_sstmt s2
+  | SWhile(e, s) -> "while (" ^ string_of_sexpr e ^ ") " ^ string_of_sstmt s
+  | SReturn(expr) -> "return " ^ string_of_sexpr expr ^ ";\n" 
+  | SElif(e1, s1, e2, s2, s3) -> "if (" ^ string_of_sexpr e1 ^ ")\n" ^
+      string_of_sstmt s1 ^ "elif (" ^ string_of_sexpr e2 ^ ")\n" ^
+      string_of_sstmt s2 ^ "else\n" ^ string_of_sstmt s3
+
+let string_of_sfdecl fdecl =
+  string_of_typ fdecl.srtyp ^ " " ^
+  fdecl.sfname ^ "(" ^ String.concat ", " (List.map snd fdecl.sformals) ^
+  ")\n{\n" ^
+  String.concat "" (List.map string_of_vdecl fdecl.slocals) ^
+  String.concat "" (List.map string_of_sstmt fdecl.sbody) ^
+  "}\n"
+
+let string_of_sprogram (vars, funcs) =
+  "\n\nSementically checked program: \n\n" ^
+  String.concat "" (List.map string_of_vdecl vars) ^ "\n" ^
+  String.concat "\n" (List.map string_of_sfdecl funcs)
+(* IR generation: translate takes a semantically checked AST and
+   produces LLVM IR
+
+   LLVM tutorial: Make sure to read the OCaml version of the tutorial
+
+   http://llvm.org/docs/tutorial/index.html
+
+   Detailed documentation on the OCaml LLVM library:
+
+   http://llvm.moe/
+   http://llvm.moe/ocaml/
+
+*)
+
+module L = Llvm
+module A = Ast
+open Sast
+
+module StringMap = Map.Make(String)
+
+(* translate : Sast.program -> Llvm.module *)
+let translate (globals, functions) =
+  let context    = L.global_context () in
+
+  (* Create the LLVM compilation module into which
+     we will generate code *)
+  let the_module = L.create_module context "Calclyst" in
+
+  (* Get types from the context *)
+  let i32_t      = L.i32_type    context
+  and float_t    = L.double_type context
+  and i8_t       = L.i8_type     context
+  and i1_t       = L.i1_type     context
+  and void_t     = L.void_type   context in
+  (* Return the LLVM type for a calclyst type *)
+  let rec ltype_of_typ = function
+      A.Int       -> i32_t
+    | A.Bool      -> i1_t
+    | A.Void      -> void_t
+    | A.String    -> L.pointer_type i8_t
+    | A.Float     -> float_t
+    | A.Char      -> i8_t
+    | A.Real      -> L.pointer_type i8_t
+    | A.Imaginary -> L.pointer_type i8_t
+    | A.Complex   -> L.pointer_type i8_t
+    | A.Array (t, e)    -> let num =(match e with
+                           Literal(l) -> l
+                         | _ -> raise(Failure("Can not declare  array's length with non integer expr type."))
+                        )
+                        in L.array_type (ltype_of_typ t) num 
+  in
+
+  (* Create a map of global variables after creating each *)
+  let global_vars : L.llvalue StringMap.t =
+    let global_var m (t, n) =
+      let init = L.const_int (ltype_of_typ t) 0
+      in StringMap.add n (L.define_global n init the_module) m in
+    List.fold_left global_var StringMap.empty globals in
+
+  let printf_t : L.lltype =
+    L.var_arg_function_type i32_t [| L.pointer_type i8_t |] in
+  let sconcat_t : L.lltype =
+          L.function_type (L.pointer_type i8_t) 
+          [| L.pointer_type i8_t; L.pointer_type i8_t |] in
+  let compose_t : L.lltype =
+          L.function_type (L.pointer_type i8_t) 
+          [| L.pointer_type i8_t; L.pointer_type i8_t |] in
+  let computeReal_t : L.lltype =
+          L.function_type (L.pointer_type i8_t) 
+          [| L.pointer_type i8_t; L.pointer_type i8_t; L.pointer_type i8_t |] in
+  let computeImaginary_t : L.lltype =
+        L.function_type (L.pointer_type i8_t) 
+        [| L.pointer_type i8_t; L.pointer_type i8_t; L.pointer_type i8_t |] in
+  let computeComplex_t : L.lltype =
+        L.function_type (L.pointer_type i8_t) 
+        [| L.pointer_type i8_t; L.pointer_type i8_t; L.pointer_type i8_t |] in
+  let permutation_t: L.lltype =
+      L.function_type i32_t [|i32_t; i32_t|] in 
+  let combination_t: L.lltype =
+      L.function_type i32_t [|i32_t; i32_t|] in 
+  let factorial_t: L.lltype = 
+      L.function_type i32_t [|i32_t|] in
+  let fibonacci_t: L.lltype = 
+      L.function_type i32_t [|i32_t|] in
+  let power_t: L.lltype =
+      L.function_type float_t [|float_t; i32_t|] in
+  let binomial_probability_t: L.lltype =
+      L.function_type float_t [|i32_t; i32_t; float_t|] in
+  let printf_func : L.llvalue =
+    L.declare_function "printf" printf_t the_module in
+  let sconcat_func : L.llvalue =
+    L.declare_function "sconcat" sconcat_t the_module in
+  let compose_func : L.llvalue =
+    L.declare_function "compose" compose_t the_module in
+  let computeReal_func : L.llvalue =
+    L.declare_function "computeReal" computeReal_t the_module in
+  let computeImaginary_func : L.llvalue =
+    L.declare_function "computeImaginary" computeImaginary_t the_module in
+  let computeComplex_func : L.llvalue =
+    L.declare_function "computeComplex" computeComplex_t the_module in
+  let permutation_func: L.llvalue =
+    L.declare_function "permutation" permutation_t the_module in
+  let combination_func: L.llvalue =
+    L.declare_function "combination" combination_t the_module in
+  let factorial_func: L.llvalue = 
+    L.declare_function "factorial" factorial_t the_module in
+  let fibonacci_func: L.llvalue = 
+    L.declare_function "fibonacci" fibonacci_t the_module in
+  let power_func: L.llvalue =
+    L.declare_function "power"  power_t the_module in
+  let binomial_probability_func: L.llvalue =
+    L.declare_function "binomial_probability"  binomial_probability_t the_module in
+  
+
+  (* Define each function (arguments and return type) so we can
+     call it even before we've created its body *)
+  let function_decls : (L.llvalue * sfunc_def) StringMap.t =
+    let function_decl m fdecl =
+      let name = fdecl.sfname
+      and formal_types =
+        Array.of_list (List.map (fun (t,_) -> ltype_of_typ t) fdecl.sformals)
+      in let ftype = L.function_type (ltype_of_typ fdecl.srtyp) formal_types in
+      StringMap.add name (L.define_function name ftype the_module, fdecl) m in
+    List.fold_left function_decl StringMap.empty functions in
+
+  (* Fill in the body of the given function *)
+  let build_function_body fdecl =
+    let (the_function, _) = StringMap.find fdecl.sfname function_decls in
+    let builder = L.builder_at_end context (L.entry_block the_function) in
+
+        let int_format_str = L.build_global_stringptr "%d\n" "fmt" builder
+    and float_format_str = L.build_global_stringptr "%g\n" "fmt" builder 
+    and string_format_str = L.build_global_stringptr "%s\n" "fmt" builder 
+    and char_format_str = L.build_global_stringptr "%c\n" "fmt" builder
+    and real_format_str = L.build_global_stringptr "%s\n" "fmt" builder
+    and imaginary_format_str = L.build_global_stringptr "%s\n" "fmt" builder 
+    and complex_format_str = L.build_global_stringptr "%s\n" "fmt" builder 
+    in
+
+    (* Construct the function's "locals": formal arguments and locally
+       declared variables.  Allocate each on the stack, initialize their
+       value, if appropriate, and remember their values in the "locals" map *)
+    let local_vars =
+      let add_formal m (t, n) p =
+        L.set_value_name n p;
+        let local = L.build_alloca (ltype_of_typ t) n builder in
+        ignore (L.build_store p local builder);
+        StringMap.add n local m
+
+      (* Allocate space for any locally declared variables and add the
+       * resulting registers to our map *)
+      and add_local m (t, n) =
+        let local_var = L.build_alloca (ltype_of_typ t) n builder
+        in StringMap.add n local_var m
+      in
+
+      let formals = List.fold_left2 add_formal StringMap.empty fdecl.sformals
+          (Array.to_list (L.params the_function)) in
+      List.fold_left add_local formals fdecl.slocals
+    in
+
+    (* Return the value for a variable or formal argument.
+       Check local names first, then global names *)
+    let lookup n = try StringMap.find n local_vars
+      with Not_found -> StringMap.find n global_vars
+    in
+
+    (* Construct code for an expression; return its value *)
+    let rec build_expr builder ((_, e) : sexpr) = match e with
+        SLiteral i  -> L.const_int i32_t i
+      | SBoolLit b  -> L.const_int i1_t (if b then 1 else 0)
+      | SFLit f -> L.const_float_of_string float_t f
+      | SRLit r -> L.build_global_stringptr r "fmt" builder
+      | SILit i -> L.build_global_stringptr i "fmt" builder
+      | SCLit c -> L.build_global_stringptr c "fmt" builder
+      | SId s -> L.build_load (lookup s) s builder
+      | SChrLit c -> L.const_int i8_t (Char.code c)
+      | SStrLit s -> L.build_global_stringptr s "fmt" builder
+
+      |SAssign (s, e1, e2) -> (match e2 with 
+                               (_, SNoexpr) -> (let e' = build_expr builder e1 in 
+                                        ignore(L.build_store e' (lookup s) builder); e')
+                               | _ -> let e' = build_expr builder e2 in 
+                                      let index = (match e1 with
+                                         (Int, _)          -> build_expr builder e1
+                                       | _                 -> raise(Failure("Semant.ml should have caught."))
+                                      ) in
+                                      let indices = 
+                                        (Array.of_list [L.const_int i32_t 0; index]) in 
+                                      let ptr =  
+                                        L.build_in_bounds_gep (lookup s) indices (s^"_ptr_") builder
+                                      in L.build_store e' ptr builder
+                               )
+      | SBinop ((A.Float,_ ) as e1, op, e2) ->
+          let e1' = build_expr builder e1
+        and e2' = build_expr builder e2  in
+          (match op with 
+            A.Add     -> L.build_fadd
+          | A.Sub     -> L.build_fsub
+          | A.Mul    -> L.build_fmul
+          | A.Div     -> L.build_fdiv 
+          | A.Equal   -> L.build_fcmp L.Fcmp.Oeq
+          | A.Less    -> L.build_fcmp L.Fcmp.Olt
+          | A.Greater -> L.build_fcmp L.Fcmp.Ogt
+          | A.Leq     -> L.build_fcmp L.Fcmp.Ole
+          | A.Geq     -> L.build_fcmp L.Fcmp.Oge
+          | A.And | A.Or | A.Mod->
+              raise (Failure "internal error: semant should have rejected and/or on float")
+                | _ -> raise (Failure "This float binop is not implemented")
+          ) e1' e2' "tmp" builder
+      |  SBinop (((A.String,_ )) as e, op, e2) ->
+          if op == A.Add then
+                let e1' = build_expr builder e
+                and e2' = build_expr builder e2 in
+            L.build_call sconcat_func [| e1'; e2' |] "sconcat" builder 
+          else
+                raise (Failure "internal error: can only concatenate (+) strings")
+      | SBinop(e1, A.Comp, e2) ->
+        let (t1, e1') = e1
+        and (t2, e2') = e2 in
+        (match t1, t2 with
+        Real, Imaginary -> 
+                let a' = build_expr builder e1
+                and b' = build_expr builder e2 in 
+                L.build_call compose_func [| a'; b' |] "compose" builder
+        |Imaginary, Real -> 
+                let a' = build_expr builder e1
+                and b' = build_expr builder e2 
+                in L.build_call compose_func [| b'; a' |] "compose" builder
+        | _ -> raise (Failure "Internal error: cannot compose given types"))
+      | SBinop(e1, A.Rdiv, e2) ->
+        let e1' = build_expr builder e1
+        and e2' = build_expr builder e2 in
+        let build_float_division builder dividend divisor float_type =
+        let dividend_float = L.build_sitofp dividend float_type "dividend_float" builder in
+        let divisor_float = L.build_sitofp divisor float_type "divisor_float" builder in
+        L.build_fdiv dividend_float divisor_float "tmp" builder
+        in
+        build_float_division builder e1' e2' float_t
+      | SBinop (((A.Real,_ ) | (A.Imaginary,_ ) | (A.Complex, _ ) ) as e1, op, e2) ->
+        let add_str = L.build_global_stringptr "Add" "addString" builder and
+        sub_str = L.build_global_stringptr "Sub" "subString" builder and
+        mul_str = L.build_global_stringptr "Mul" "mulString" builder and
+        div_str = L.build_global_stringptr "Div" "divString" builder in
+        let (t1,_) = e1 and(t2,_) = e2
+        in let e1' = build_expr builder e1
+        and e2' = build_expr builder e2 in
+        if (t1 = Real && t1 = t2) then 
+        (match op with 
+          A.Add -> L.build_call computeReal_func [| e1'; e2'; add_str |] "computeReal" builder
+          |A.Sub -> L.build_call computeReal_func [| e1'; e2'; sub_str |] "computeReal" builder
+          |A.Mul -> L.build_call computeReal_func [| e1'; e2'; mul_str |] "computeReal" builder
+          |A.Div -> L.build_call computeReal_func [| e1'; e2'; div_str |] "computeReal" builder
+          |_ -> raise (Failure("Unhandled case: composeReal")) 
+          ) else if (t1 = Imaginary && t1 = t2) then 
+        (match op with 
+          A.Add -> L.build_call computeImaginary_func [| e1'; e2'; add_str|] "computeImaginary" builder
+          |A.Sub -> L.build_call computeImaginary_func [| e1'; e2'; sub_str |] "computeImaginary" builder
+          |A.Mul -> L.build_call computeImaginary_func [| e1'; e2'; mul_str |] "computeImaginary" builder
+          |A.Div -> L.build_call computeImaginary_func [| e1'; e2'; div_str |] "computeImaginary" builder
+          |_ -> raise (Failure("Unhandled case: composeReal")) 
+          ) else if (t1 = Complex && t1 = t2) then 
+        (match op with 
+          A.Add -> L.build_call computeComplex_func [| e1'; e2'; add_str|] "computeComplex" builder
+          |A.Sub -> L.build_call computeComplex_func [| e1'; e2'; sub_str |] "computeComplex" builder
+          |A.Mul -> L.build_call computeComplex_func [| e1'; e2'; mul_str |] "computeComplex" builder
+          |A.Div -> L.build_call computeComplex_func [| e1'; e2'; div_str |] "computeComplex" builder
+          |_ -> raise (Failure("Unhandled case: composeReal")) 
+          ) 
+          else
+                raise (Failure "internal error: can only concatenate (+) strings")
+      | SBinop (e1, op, e2) ->
+        let e1' = build_expr builder e1
+        and e2' = build_expr builder e2 in
+        (match op with
+           A.Add     -> L.build_add
+         | A.Sub     -> L.build_sub
+         | A.Mul     -> L.build_mul
+         | A.Div     -> L.build_sdiv
+         | A.Mod     -> L.build_srem
+         | A.And     -> L.build_and
+         | A.Comp    -> L.build_and
+         | A.Rdiv    -> L.build_sdiv
+         | A.Or      -> L.build_or
+         | A.Equal   -> L.build_icmp L.Icmp.Eq
+         | A.Neq     -> L.build_icmp L.Icmp.Ne
+         | A.Less    -> L.build_icmp L.Icmp.Slt
+         | A.Greater -> L.build_icmp L.Icmp.Sgt
+         | A.Leq     -> L.build_icmp L.Icmp.Sle
+         | A.Geq     -> L.build_icmp L.Icmp.Sge
+        ) e1' e2' "tmp" builder
+      | SCall ("printInt", [e]) | SCall ("printBool", [e]) ->
+          L.build_call printf_func [| int_format_str; (build_expr builder e) |]
+            "printf" builder
+      | SCall ("printChar", [e])  ->
+          L.build_call printf_func [| char_format_str; (build_expr builder e) |]
+            "printf" builder
+      | SCall ("printFloat", [e]) ->
+          L.build_call printf_func [| float_format_str; (build_expr builder e) |]
+            "printf" builder
+      | SCall ("printString", [e]) ->
+          L.build_call printf_func [| string_format_str; (build_expr builder e) |]
+            "printf" builder
+      | SCall ("printReal", [e]) ->
+          L.build_call printf_func [| real_format_str; (build_expr builder e)|]
+            "printf" builder
+      | SCall ("printImaginary", [e]) ->
+          L.build_call printf_func [| imaginary_format_str; (build_expr builder e) |]
+            "printf" builder
+      | SCall ("printComplex", [e]) ->
+          L.build_call printf_func [| complex_format_str; (build_expr builder e) |]
+            "printf" builder
+      | SCall ("permutation", e) ->
+        (match e with
+        [e1;e2] ->
+          let e1' = build_expr builder e1
+          and e2' = build_expr builder e2 in
+          L.build_call permutation_func [|e1'; e2'|] "permutation" builder
+        |_->  raise (Failure("Unhandled case: permutation")))
+      | SCall ("combination", e) ->
+        (match e with
+        [e1;e2] ->
+          let e1' = build_expr builder e1
+          and e2' = build_expr builder e2 in
+          L.build_call combination_func [|e1'; e2'|] "combination" builder
+        |_->  raise (Failure("Unhandled case: combination")))
+      | SCall ("factorial", e) ->
+        (match e with
+        [e1] ->
+          let e1' = build_expr builder e1 in
+          L.build_call factorial_func [|e1'|] "factorial" builder
+        |_->  raise (Failure("Unhandled case: factorial")))
+      | SCall ("fibonacci", e) ->
+        (match e with
+        [e1] ->
+          let e1' = build_expr builder e1 in
+          L.build_call fibonacci_func [|e1'|] "fibonacci" builder
+        |_->  raise (Failure("Unhandled case: fibonacci")))
+      | SCall ("power", e) ->
+        (match e with
+        [e1;e2] ->
+          let e1' = build_expr builder e1
+          and e2' = build_expr builder e2 in
+          L.build_call power_func [|e1'; e2'|] "power" builder
+        |_->  raise (Failure("Unhandled case: power")))
+      |SCall ("binomial_probability", e) ->
+        (match e with
+        [e1;e2;e3] ->
+          let e1' = build_expr builder e1
+          and e2' = build_expr builder e2
+          and e3' = build_expr builder e3 in
+          L.build_call binomial_probability_func [|e1'; e2'; e3'|] "binomial_probability" builder
+        |_->  raise (Failure("Unhandled case: binomial_probability")))
+      | SCall (f, args) ->
+        let (fdef, fdecl) = StringMap.find f function_decls in
+        let llargs = List.rev (List.map (build_expr builder) (List.rev args)) in
+        let result = (match fdecl.srtyp with 
+                        A.Void -> ""
+                        | _ -> f ^ "_result") in
+        L.build_call fdef (Array.of_list llargs) result builder
+      | SAccess (s, e) -> let index = (match e with
+                             (Int, _)          -> build_expr builder e
+                           | _                 -> raise(Failure("This should have been caught by semant.ml"))
+                          ) in
+                          let indices = 
+                            (Array.of_list [L.const_int i32_t 0; index]) in 
+                          let ptr =  
+                            L.build_in_bounds_gep (lookup s) indices (s^"_ptr_") builder
+                          in L.build_load ptr (s^"_elem_") builder
+      |SUnop(op, ((t, _) as e)) ->
+          let e' = build_expr builder e in
+	      (match op with
+          A.Neg when t = A.Float -> L.build_fneg 
+          | A.Neg                  -> L.build_neg
+          | A.Not                  -> L.build_not) e' "tmp" builder
+      | _ -> raise (Failure("Unhandled case: unimplemented")) 
+    in
+
+    (* LLVM insists each basic block end with exactly one "terminator"
+       instruction that transfers control.  This function runs "instr builder"
+       if the current block does not already have a terminator.  Used,
+       e.g., to handle the "fall off the end of the function" case. *)
+    let add_terminal builder instr =
+      match L.block_terminator (L.insertion_block builder) with
+        Some _ -> ()
+      | None -> ignore (instr builder) in
+
+    (* Build the code for the given statement; return the builder for
+       the statement's successor (i.e., the next instruction will be built
+       after the one generated by this call) *)
+    let rec build_stmt builder = function
+        SBlock sl -> List.fold_left build_stmt builder sl
+      | SExpr e -> ignore(build_expr builder e); builder
+      | SReturn e -> ignore(match fdecl.srtyp with 
+              A.Void -> L.build_ret_void builder
+            |_ -> L.build_ret (build_expr builder e) builder); builder
+      | SIf (predicate, then_stmt, else_stmt) ->
+        let bool_val = build_expr builder predicate in
+
+        let then_bb = L.append_block context "then" the_function in
+        ignore (build_stmt (L.builder_at_end context then_bb) then_stmt);
+        let else_bb = L.append_block context "else" the_function in
+        ignore (build_stmt (L.builder_at_end context else_bb) else_stmt);
+
+        let end_bb = L.append_block context "if_end" the_function in
+        let build_br_end = L.build_br end_bb in (* partial function *)
+        add_terminal (L.builder_at_end context then_bb) build_br_end;
+        add_terminal (L.builder_at_end context else_bb) build_br_end;
+
+        ignore(L.build_cond_br bool_val then_bb else_bb builder);
+        L.builder_at_end context end_bb
+      | SElif (ifpredicate, thenstmt, elifpredicate, elifstmt, elsestmt) ->
+  
+
+          let bool_val_if = build_expr builder ifpredicate in
+          let then_bb = L.append_block context "then" the_function in
+          ignore (build_stmt (L.builder_at_end context then_bb) thenstmt);
+
+          let elif_check_bb = L.append_block context "elif_check" the_function in
+          let elif_bb = L.append_block context "elif" the_function in
+          ignore (build_stmt (L.builder_at_end context elif_bb) elifstmt);
+
+          let else_bb = L.append_block context "else" the_function in
+          ignore (build_stmt (L.builder_at_end context else_bb) elsestmt);
+
+          let end_bb = L.append_block context "end" the_function in
+
+          ignore (L.build_cond_br bool_val_if then_bb elif_check_bb  builder);
+
+          let then_builder = L.builder_at_end context then_bb in
+          ignore (L.build_br end_bb then_builder); 
+
+          let elif_check_builder = L.builder_at_end context elif_check_bb in
+          let bool_val_elif = build_expr elif_check_builder elifpredicate in
+          (* Branch in elif: if true, stay in elif_bb; if false, go to else_bb *)
+          ignore (L.build_cond_br bool_val_elif elif_bb else_bb elif_check_builder);
+          ignore (L.build_br end_bb elif_check_builder); 
+
+  
+          let else_builder = L.builder_at_end context else_bb in
+          ignore (L.build_br end_bb else_builder); 
+
+          L.builder_at_end context end_bb
+
+      | SWhile (predicate, body) ->
+        let while_bb = L.append_block context "while" the_function in
+        let build_br_while = L.build_br while_bb in (* partial function *)
+        ignore (build_br_while builder);
+        let while_builder = L.builder_at_end context while_bb in
+        let bool_val = build_expr while_builder predicate in
+
+        let body_bb = L.append_block context "while_body" the_function in
+        add_terminal (build_stmt (L.builder_at_end context body_bb) body) build_br_while;
+
+        let end_bb = L.append_block context "while_end" the_function in
+
+        ignore(L.build_cond_br bool_val body_bb end_bb while_builder);
+        L.builder_at_end context end_bb
+
+    in
+    (* Build the code for each statement in the function *)
+    let func_builder = build_stmt builder (SBlock fdecl.sbody) in
+
+    (* Add a return if the last block falls off the end *)
+    add_terminal func_builder (L.build_ret (L.const_int i32_t 0))
+
+  in
+
+  List.iter build_function_body functions;
+  the_module
+(* Ocamllex scanner for CalcLyst *)
+
+{ open CalcParse
+ let chop_last_char str = 
+    String.sub str 0 (String.length str - 1) }
+
+let digit = ['0' - '9']
+let digits = digit+
+let letter = ['a'-'z' 'A'-'Z']
+let ascii = [' ' - '~']
+let escapeChars = ('\\' ['b' 't' 'r' 'n'])
+
+rule token = parse
+  [' ' '\t' '\r' '\n'] { token lexbuf } (* Whitespace *)
+| "/*"     { comment lexbuf }           (* Comments *)
+| '('      { LPAREN }
+| ')'      { RPAREN }
+| '{'      { LBRACE }
+| '}'      { RBRACE }
+| "["      { LBRAC }
+| "]"      { RBRAC }
+| ';'      { SEMI }
+| ','      { COMMA }
+| '+'      { PLUS }
+| '-'      { MINUS }
+| '*'      { TIMES }
+| '~'      { COMP  }
+| '/'      { DIVIDE }
+| "//"     { RDIVIDE }
+| '='      { ASSIGN }
+| "=="     { EQ }
+| '<'      { LT }
+| ">"      { GT }
+| "<="      {LEQ}
+| ">="      {GEQ}
+| "!="     { NEQ }
+| "&&"     { AND }
+| "||"     { OR }
+| "!"      { NOT }
+| ":"      { COLON }
+| "if"     { IF }
+| "elif"   {ELIF}
+| "else"   { ELSE }
+| "while"  { WHILE }
+| "return" { RETURN }
+| "int"    { INT }
+| "bool"   { BOOL }
+| "char"   { CHAR }
+| "float"  { FLOAT }
+| "String" { STRING }
+| "Real"   {REAL}
+| "Imaginary" {IMAGINARY}
+| "Complex" {COMPLEX}
+| "void"   { VOID }
+| "true"   { BLIT(true)  }
+| "false"  { BLIT(false) }
+| digits as lem { LITERAL(int_of_string lem) }
+| digits '.'  digit* ( ['e' 'E'] ['+' '-']? digits )? '@' digits '.'  digit* ( ['e' 'E'] ['+' '-']? digits )? 'i' as lem { CLIT(lem)  }
+| digits '.'  digit* ( ['e' 'E'] ['+' '-']? digits )?  as lem { FLIT(lem) }
+| digits '.'  digit* ( ['e' 'E'] ['+' '-']? digits )? 'r' as lem { RLIT(lem) }
+| digits '.'  digit* ( ['e' 'E'] ['+' '-']? digits )? 'i' as lem { ILIT(lem) }
+
+| letter (digit | letter | '_')*  as lem { ID(lem) }
+| "'" escapeChars "'"                                 as lem { match lem.[2] with 
+                                                                 'b' -> CHRLIT('\b')
+                                                                |'t' -> CHRLIT('\t')
+                                                                |'r' -> CHRLIT('\r')
+                                                                |'n' -> CHRLIT('\n')
+                                                                | _ -> raise (Failure "Invalid Escape character")
+                                                             } 
+| "'" ascii "'"                                       as lxm { CHRLIT(String.get lxm 1) } 
+| '"' (( ascii # '"' )* escapeChars*)+ '"'            as lxm { STRLIT(String.sub lxm 1 ((String.length lxm )-2) ) }                                                            
+| eof { EOF }
+| _ as char { raise (Failure("illegal character " ^ Char.escaped char)) }
+
+and comment = parse
+  "*/" { token lexbuf }
+| _    { comment lexbuf }
+(* Semantic checking for the MicroC compiler *)
+
+open Ast
+open Sast
+
+module StringMap = Map.Make(String)
+
+(* Semantic checking of the AST. Returns an SAST if successful,
+   throws an exception if something is wrong.
+
+   Check each global variable, then check each function *)
+
+let check (globals, functions) =
+
+  (* Verify a list of bindings has no duplicate names *)
+  let check_binds (kind : string) (binds : (typ * string) list) =
+    let rec dups = function
+        [] -> ()
+      |	((_,n1) :: (_,n2) :: _) when n1 = n2 ->
+        raise (Failure ("duplicate " ^ kind ^ " " ^ n1))
+      | _ :: t -> dups t
+    in dups (List.sort (fun (_,a) (_,b) -> compare a b) binds)
+  in
+
+  (* Make sure no globals duplicate *)
+  check_binds "global" globals;
+
+  (* Collect function declarations for built-in functions: no bodies *)
+  let built_in_decls =
+    let add_bind map (name,rtyp, formals) = StringMap.add name {
+      rtyp;
+      fname = name; 
+      formals;
+      locals = [];
+      body = [] } map
+    in List.fold_left add_bind StringMap.empty [ 
+                                                 ("printInt", Void, [Int, "x"]); 
+                                                 ("printString",Void, [String, "x"]);
+                                                 ("printBool", Void, [Bool, "x"]);
+                                                 ("printFloat", Void, [Float, "x"]);
+                                                 ("printChar", Void, [Char, "x"]);
+                                                 ("printReal", Void, [Real, "x"]);
+                                                 ("printImaginary", Void, [Imaginary, "x"]);
+                                                 ("printComplex", Void, [Complex, "x"]);
+                                                 ("permutation", Int, [(Int, "x"); (Int, "y")]);
+                                                 ("combination", Int, [(Int, "x"); (Int, "y")]);
+                                                 ("factorial", Int, [Int, "x"]);
+                                                 ("fibonacci", Int, [Int, "x"]);
+                                                 ("power", Float, [(Float, "x"); (Int, "y")]);
+                                                 ("binomial_probability", Float, [(Int, "x"); (Int, "y"); (Float, "z")]);
+                                               ]
+  in
+
+  (* Add function name to symbol table *)
+  let add_func map fd =
+    let built_in_err = "function " ^ fd.fname ^ " may not be defined"
+    and dup_err = "duplicate function " ^ fd.fname
+    and make_err er = raise (Failure er)
+    and n = fd.fname (* Name of the function *)
+    in match fd with (* No duplicate functions or redefinitions of built-ins *)
+      _ when StringMap.mem n built_in_decls -> make_err built_in_err
+    | _ when StringMap.mem n map -> make_err dup_err
+    | _ ->  StringMap.add n fd map
+  in
+
+  (* Collect all function names into one symbol table *)
+  let function_decls = List.fold_left add_func built_in_decls functions
+  in
+
+  (* Return a function from our symbol table *)
+  let find_func s =
+    try StringMap.find s function_decls
+    with Not_found -> raise (Failure ("unrecognized function " ^ s))
+  in
+
+  let _ = find_func "main" in (* Ensure "main" is defined *)
+
+  let check_func func =
+    (* Make sure no formals or locals are void or duplicates *)
+    check_binds "formal" func.formals;
+    check_binds "local" func.locals;
+
+    (* Raise an exception if the given rvalue type cannot be assigned to
+       the given lvalue type *)
+    let check_assign lvaluet rvaluet err =
+      if lvaluet = rvaluet then lvaluet else raise (Failure err)
+    in
+
+    (* Build local symbol table of variables for this function *)
+    let symbols = List.fold_left (fun m (ty, name) -> StringMap.add name ty m)
+        StringMap.empty (globals @ func.formals @ func.locals )
+    in
+
+    (* Return a variable from our local symbol table *)
+    let type_of_identifier s =
+      try StringMap.find s symbols
+      with Not_found -> raise (Failure ("undeclared identifier " ^ s))
+    in
+
+    (* Return a semantically-checked expression, i.e., with a type *)
+    let rec check_expr = function
+        Literal l -> (Int, SLiteral l)
+      | BoolLit l -> (Bool, SBoolLit l)
+      | FLit f -> (Float, SFLit f)
+      | RLit l -> (Real, SRLit l)
+      | ILit l -> (Imaginary, SILit l)
+      | CLit l -> (Complex, SCLit l)
+      | ChrLit c -> (Char, SChrLit c)
+      | StrLit s -> (String, SStrLit s)
+      | Id var -> (type_of_identifier var, SId var)
+      | Assign(var, e1, e2) as ex -> 
+          let (rvalue, lt) = match e2 with 
+              Noexpr -> (e1, type_of_identifier var)
+            | _      -> let elem_typ = type_of_identifier var in 
+                        ( match elem_typ  with 
+                            Array(t, e) -> (match (e1, e) with
+                                           (Literal index, Literal arr_size) -> 
+                                                           if index > (arr_size - 1) 
+                                                           then raise(Failure("ERROR: Index out of bounds.")) 
+                                                           else (e2, t)
+                                            | (Unop _, _)  -> raise(Failure("ERROR: Index out of bounds.")) 
+                                            | _            -> (e2, t)  
+                                           )
+                           | _ -> raise(Failure("ERROR: This case should not have been reached.")) 
+                        )
+          in
+            let (rt, _) = check_expr rvalue in
+            let err = "illegal assignment " ^ string_of_typ lt ^ " = " ^ 
+              string_of_typ rt ^ " in " ^ string_of_expr ex
+            in  (check_assign lt rt err, SAssign(var, check_expr e1 , check_expr e2 ))
+
+      | Binop(e1, op, e2) as e ->
+        let (t1, e1') = check_expr e1
+        and (t2, e2') = check_expr e2 in
+        let err = "illegal binary operator " ^
+                  string_of_typ t1 ^ " " ^ string_of_op op ^ " " ^
+                  string_of_typ t2 ^ " in " ^ string_of_expr e
+        in
+        (* All binary operators require operands of the same type*)
+        if t1 = t2 then
+          (* Determine expression type based on operator and operand types *)
+          let t = match op with
+            Add | Sub | Mul | Div when t1 = Int   -> Int
+            | Rdiv when t1 = Int  -> Float
+            | Add when t1 = String   -> String
+            | Add | Sub | Mul | Div when t1 = Float   -> Float
+            | Add | Sub | Mul | Div when t1 = Real   -> Real
+            | Add | Sub when t1 = Imaginary   -> Imaginary
+            | Mul | Div when t1 = Imaginary -> Real 
+            | Add | Sub | Mul | Div when t1 = Complex   -> Complex
+            | Equal | Neq -> Bool
+            | Less | Greater | Geq | Leq when (t1 = Int || t1 = Float) -> Bool
+            | And | Or when t1 = Bool -> Bool
+            | _ -> raise (Failure err)
+          in
+          (t, SBinop((t1, e1'), op, (t2, e2')))
+        else if (t1 = Real || t1 = Imaginary || t1 = Complex) then
+            let t = match op with
+            Comp when (t1 = Real && t2 = Imaginary) -> Complex
+            |Comp when (t1 = Imaginary && t2 = Real) -> Complex
+            | Add | Sub | Mul | Div when (t2 = Real || t2 = Imaginary || t2 = Complex) -> Complex
+            | _ -> raise (Failure err)
+          in (t, SBinop((t1, e1'), op, (t2, e2')))
+        else raise (Failure err)
+      | Unop(op, e) as ex -> 
+          let (t, e') = check_expr e in
+          let ty = match op with
+            Neg when t = Int || t = Float || t = Real || t = Imaginary -> t
+          | Not when t = Bool -> Bool
+          | _ -> raise (Failure ("illegal unary operator " ^ 
+                                 string_of_uop op ^ string_of_typ t ^
+                                 " in " ^ string_of_expr ex))
+          in (ty, SUnop(op, (t, e')))
+      | Access (s, e) -> 
+         let elem_typ = type_of_identifier s in 
+         let e'= check_expr e in 
+         ( match elem_typ  with 
+             Array(t, n) ->
+                                     (match (e', n) with 
+                                       ((Int,  SLiteral index),  Literal arr_size) -> 
+                                        if index > (arr_size - 1)
+                                        then raise(Failure("ERROR: Index out of bounds.")) 
+                                        else (t, SAccess(s, e'))
+                                     | _  -> raise(Failure("Can only access array element with number type."))
+                                     )
+           | _ -> raise(Failure("ERROR: This case should not have been reached.")) 
+         )
+      | Noexpr -> (Void, SNoexpr) 
+      | Call(fname, args) as call ->
+        let fd = find_func fname in
+        let param_length = List.length fd.formals in
+        if List.length args != param_length then
+          raise (Failure ("expecting " ^ string_of_int param_length ^
+                          " arguments in " ^ string_of_expr call))
+        else let check_call (ft, _) e =
+               let (et, e') = check_expr e in
+               let err = "illegal argument found " ^ string_of_typ et ^
+                         " expected " ^ string_of_typ ft ^ " in " ^ string_of_expr e
+               in (check_assign ft et err, e')
+          in
+          let args' = List.map2 check_call fd.formals args
+          in (fd.rtyp, SCall(fname, args'))
+    in
+
+    let check_bool_expr e =
+      let (t, e') = check_expr e in
+      match t with
+      | Bool -> (t, e')
+      |  _ -> raise (Failure ("expected Boolean expression in " ^ string_of_expr e))
+    in
+
+    let rec check_stmt_list =function
+        [] -> []
+      | Block sl :: sl'  -> check_stmt_list (sl @ sl') (* Flatten blocks *)
+      | s :: sl -> check_stmt s :: check_stmt_list sl
+    (* Return a semantically-checked statement i.e. containing sexprs *)
+    and check_stmt =function
+      (* A block is correct if each statement is correct and nothing
+         follows any Return statement.  Nested blocks are flattened. *)
+        Block sl -> SBlock (check_stmt_list sl)
+      | Expr e -> SExpr (check_expr e)
+      | If(e, st1, st2) ->
+        SIf(check_bool_expr e, check_stmt st1, check_stmt st2)
+      | While(e, st) ->
+        SWhile(check_bool_expr e, check_stmt st)
+      | Return e ->
+        let (t, e') = check_expr e in
+        if t = func.rtyp then SReturn (t, e')
+        else raise (
+            Failure ("return gives " ^ string_of_typ t ^ " expected " ^
+                     string_of_typ func.rtyp ^ " in " ^ string_of_expr e))
+      | Elif(e1, s1, e2, s2, s3) ->
+        SElif(check_bool_expr e1, check_stmt s1,check_bool_expr e2, check_stmt s2, check_stmt s3)
+
+    in (* body of check_func *)
+    { srtyp = func.rtyp;
+      sfname = func.fname;
+      sformals = func.formals;
+      slocals  = func.locals;
+      sbody = check_stmt_list func.body
+    }
+  in
+  (globals, List.map check_func functions)

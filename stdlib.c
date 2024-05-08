@@ -150,7 +150,7 @@ char *computeComplex(char *s1, char *s2, char * op) {//a+bi, c+di
 		result2 = c12 - c22;
 	} else if (strcmp(op, "Mul") == 0) {
 		result1 = c11 * c21 - c12 * c22;
-		result2 = c11 * c22 - c21 * c12;
+		result2 = c11 * c22 + c21 * c12;
 	} else if (strcmp(op, "Div") == 0) {
 		result1 = (c11 * c21 + c12* c22)/(c21*c21 + c22*c22);
 		result2 = (c12 * c21 - c11 * c22)/(c21*c21 + c22*c22);
