@@ -15,9 +15,19 @@ cc -o example.exe example.s stdlib.o
 ./example.exe > example.out
 ```
 
+Alternatively, run the script:
+```
+bash runscript.sh
+```
+
 ### cat the output llvm code
 ```
 cat example.out
+```
+### Test the CalcLyst Language
+```
+cd tests
+bash test.sh
 ```
 
 ### Compiler files
